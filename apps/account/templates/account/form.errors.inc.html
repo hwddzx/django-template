@@ -1,0 +1,30 @@
+
+  var $form = $("#{{ form_id }}");
+
+  var $alert = $('#id_form_alert', $form);
+  if (!$.isEmptyObject($alert)) {
+    var errmsg = "";
+    // render the errors belong to form instead of fields to alert area.
+    // only render the first error if more than one.
+    {% for error in field.non_field_errors %}
+      errmsg = errmsg || '{{ error|escape }}';
+    {% endfor %}
+    $alert.addClass('alert-warning').removeClass('alert-success')
+    $alert.html('<h4>' + errmsg + '</h4>');
+    $alert.removeClass('hidden');
+  }
+
+  // the errors belong to fields
+  var errors = {};
+  {% for field in form %}
+    {% for error in field.errors %}
+      // only show the first error if has mutiple ones
+      errors['{{ field.name }}'] = errors['{{ field.name }}'] || '{{ error|escape }}';
+    {% endfor %}
+  {% endfor %}
+
+  if (!$.isEmptyObject(errors)) {
+    var validator = $('#{{ form_id }}').validate();
+    validator.showErrors(errors);
+  }
+

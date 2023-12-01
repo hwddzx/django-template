@@ -1,0 +1,40 @@
+<ul class="nav nav-list">
+    {% for menu in menus %}
+        {% if menu.url %}
+            <li class="{% if forloop.first %}active{% endif %}">
+
+                <a href="#" data-url="{{ menu.url }}" class="has_no_submenu" id="id_menu_{{ forloop.counter }}">
+                    <i class="menu-icon fa {{ menu.icon }} {{ menu.color }}"></i>
+                    <span class="menu-text"> {{ menu.name }} </span>
+                </a>
+                {% else %}
+            <li id="id_menu_{{ forloop.counter }}">
+            <a href="#" class="dropdown-toggle">
+                <i class="menu-icon fa {{ menu.icon }} {{ menu.color }}"></i>
+                <span class="menu-text">{{ menu.name }}</span>
+                <b class="fa arrow fa-angle-down "></b>
+            </a>
+        {% endif %}
+    {% if menu.submenus %}
+        <ul class="submenu">
+            {% for submenu in menu.submenus %}
+                <li>
+                    <a href="#" data-url="{{ submenu.url }}" class="submenu_link"
+                       id="id_menu_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                        <i class="fa fa-angle-double-right"></i>
+                        {{ submenu.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+<!--/.nav-list-->
+
+<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+    <i class="ace-icon fa fa-angle-double-left" data-icon1="ace-icon fa fa-angle-double-left"
+       data-icon2="ace-icon fa fa-angle-double-right"></i>
+</div>

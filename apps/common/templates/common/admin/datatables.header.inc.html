@@ -1,0 +1,17 @@
+<thead>
+<tr>
+    {#  filter editors #}
+    {% for field in builder %}
+        <td data-col="{{ forloop.counter0 }}">
+            {% if field.field.is_searchable %}
+                {{ field }}
+            {% endif %}
+        </td>
+    {% endfor %}
+</tr>
+<tr>
+    {% for field in builder %}
+        <th class="datatables-col-{{ field.name }} {% if field.field.is_checkbox %}datatables-header-checkbox{% endif %}"></th>
+    {% endfor %}
+</tr>
+</thead>

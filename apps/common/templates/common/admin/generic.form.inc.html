@@ -1,0 +1,133 @@
+{#a simple template works with ModelAwareMixin#}
+{% extends 'admin/simple.base.inc.html' %}
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+{% block pagenav %}
+    {% if page_title %}
+        {{ page_title }}
+    {% else %}
+        {% if object %}{% trans '编辑' %}{% else %}{% trans '添加' %}{% endif %}{{ model_verbose_name }}
+    {% endif %}
+{% endblock pagenav %}
+
+{% block pagecontent %}
+    <form id="{{ form_id }}"
+          class="form-horizontal"
+          action="{{ form_action }}"
+          method="{{ form_method|default:'post' }}"
+          enctype="{{ form_enctype|default:'application/x-www-form-urlencoded' }}"
+          {% if modal_show %}data-modal_show="true"{% endif %}
+    >
+        {% if modal_show %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button data-dismiss="modal" class="close" type="button">×</button>
+                    <h4 class="blue bigger lighter">
+                        {% if page_title %}
+                            {{ page_title }}
+                        {% else %}
+                            {% if object %}{% trans '编辑' %}{% else %}{% trans '添加' %}{% endif %}{{ model_verbose_name }}
+                        {% endif %}
+                    </h4>
+                </div>
+
+                <div class="modal-body overflow-visible">
+                    {% block modal_body %}
+                        {% crispy form %}
+                        <div id="id_form_extra_area"></div>
+                    {% endblock %}
+                    <div class="space-6"></div>
+                    <div class="alert alert-block hidden" id="id_form_alert">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div id="id-progress-bar-container"
+                         class="progress progress-striped"
+                         style="margin: 0 20px;display:none"
+                    >
+                        <div id="id-progress-bar" class="progress-bar progress-bar-success"></div>
+                    </div>
+
+                    {% block modal_footer %}
+
+                        <button data-dismiss="modal" class="btn btn-sm" type="button">
+                            <i class="fa fa-undo red"></i>
+                            取消
+                        </button>
+
+                        <button class="btn btn-sm btn-primary " type="submit">
+                            <i class="fa fa-check green"></i>
+                            确定
+                        </button>
+
+                    {% endblock modal_footer %}
+
+                </div>
+            </div>
+        {% else %}
+            {% crispy form %}
+            <div id="id_form_extra_area"></div>
+            <div class="vspace-16"></div>
+
+            {% block form_footer %}
+                <div class="form-actions">
+                    <button class="btn btn-info" type="submit">
+                        <i class="fa fa-ok bigger-110"></i>
+                        {% trans '保存' %}
+                    </button>
+                </div>
+            {% endblock form_footer %}
+
+            <div id="id-progress-bar-container"
+                 class="progress progress-striped"
+                 style="margin: 0 20px;display:none"
+            >
+                <div id="id-progress-bar" class="progress-bar progress-bar-success"></div>
+            </div>
+
+            <div class="space-6"></div>
+            <div class="alert alert-block hidden" id="id_form_alert">
+            </div>
+        {% endif %}
+    </form>
+
+{% endblock pagecontent %}
+
+{% block pagecontent_js %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            let $form = $('#{{ form_id }}');
+
+            $(':input[class*=limited]', $form).each(input_limit_func);
+            // $('select', $form).enableChosen();
+            $(':input[multiple=multiple]', $form).enableChosen();
+            $('.help-block', $form).enablePopoverForCrispyForm();
+            $("[autofocus]", $form).focus();
+            // 如果表单内容有改变，则隐藏之前的表单提交（成功/失败）信息
+            $form.change(function () {
+                hideFormSubmitMessage($form);
+            });
+        });
+    </script>
+
+    {% block form_js %}
+        <script type="text/javascript">
+            $(document).ready(function () {
+                let $form = $('#{{ form_id }}');
+                let rules = $form.buildFormValidationRules();
+                $form.validate({rules: rules});
+                $form.ajaxForm($form.buildAjaxFormOptions({
+                    {# 不允许自动返回 #}
+                    shouldNotBack: {% if shouldNotBack %} true {% else %}false{% endif %}
+                }));
+            });
+        </script>
+    {% endblock %}
+    {% block form_extra_js %}{% endblock %}
+
+{% endblock pagecontent_js %}
+
+

@@ -1,0 +1,22 @@
+{#a simple template works with ModelAwareMixin#}
+{% extends 'admin/task.base.inc.html' %}
+
+{% block topnav %}
+    <ul class="breadcrumb">
+        <li>
+            <i class="fa fa-home"></i> <a href="{% url 'admin:admin_home' %}">主页</a>
+        </li>
+        <li class="active">
+            <i class="fa fa-folder-open"></i> <a href="#" data-url="{{ list_url }}">{{ model_verbose_name }}</a>
+        </li>
+        {% if object %}
+            <li class="active">{{ object }}</li>
+        {% endif %}
+    </ul>
+    <div class="pull-right">
+        {% if not hide_back_btn %}
+            {#    XXX: must call "return false;" to prevent bubble up the event to parent#}
+            <a class="btn btn-link btn-large" href="#" onclick="window.history.go(-1);return false;">返回</a>
+        {% endif %}
+    </div>
+{% endblock topnav %}

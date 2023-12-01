@@ -1,0 +1,167 @@
+{#a simple template works with ModelAwareMixin#}
+
+{% extends 'admin/task.base.inc.html' %}
+{% load crispy_forms_tags %}
+
+{% block topnav %}
+    <ul class="breadcrumb">
+        <li>
+            <i class="fa fa-home"></i> <a href="#">主页</a>
+        </li>
+        <li class="active">
+            <i class="fa fa-folder-open"></i> <a href="#" data-url="{{ list_url }}">{{ master_model_verbose_name }}</a>
+        </li>
+        {% if object %}
+            <li class="active">{{ object }}</li>
+        {% endif %}
+    </ul>
+    <div class="pull-right">
+        {% if not hide_back_btn %}
+            {#    XXX: must call "return false;" to prevent bubble up the event to parent#}
+            <a class="btn btn-link btn-large" href="#" onclick="window.history.go(-1);return false">返回</a>
+        {% endif %}
+    </div>
+{% endblock topnav %}
+
+{% block pagecontent %}
+
+    <form id="id-form"
+          action="{{ form_action }}"
+          method="post"
+          class="form-horizontal"
+          enctype="{{ form_enctype|default:'application/x-www-form-urlencoded' }}">
+
+        <ul id="id_tab" class="nav nav-tabs">
+            <li class="active"><a href="#master" data-toggle="tab">{{ master_model_verbose_name }}</a></li>
+            <li class=""><a href="#detail" data-toggle="tab">{{ nested_model_verbose_name }}</a></li>
+        </ul>
+        <div id="id_tab_content" class="tab-content">
+            <div class="tab-pane fade active in" id="master">
+                {% crispy form %}
+                <div id="id_form_extra_area"></div>
+            </div>
+            <div class="tab-pane fade" id="detail">
+                <div class="breadcrumb">
+                    <div class="pull-right">
+                        <div class="btn-group">
+                            <button id="append_item_button" class="btn btn-primary" type="button">
+                                <i class="fa fa-plus"></i>
+                                新增{{ model_verbose_name }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% crispy formset helper %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-info" type="submit">
+                <i class="fa fa-ok bigger-110"></i>
+                {{ submit_btn_name|default:'保存' }}
+            </button>
+        </div>
+
+        <div class="space-6"></div>
+        <div class="alert alert-block hidden" id="id_form_alert">
+        </div>
+    </form>
+{% endblock pagecontent %}
+
+{% block pagecontent_js %}
+    <script type="text/javascript">
+        var COL_COUNT = {{ column_count }};
+        var date_picker_options = {format: "yyyy-mm-dd", language: "zh-CN", weekStart: 1, maxDate: "+0D"};
+
+        function clone_item() {
+            var template_row = $("tbody tr").last();
+            var new_row = template_row.clone();
+            $('.chosen-container', new_row).remove();
+            var w_len = $("tbody tr").length;
+            var old_seq_str = '-' + (w_len - 1) + '-';
+            var new_seq_str = '-' + w_len + '-';
+            new_row.find("h4").html("{{ model_verbose_name }}" + (w_len + 1));
+            $(":input", new_row).each(function () {
+                var name_val = $(this).attr("name");
+                var id_val = $(this).attr("id");
+                var type_val = $(this).attr('type');
+                if (null != name_val) {
+                    $(this).attr("name", name_val.replace(old_seq_str, new_seq_str));
+                }
+                if (null != id_val) {
+                    $(this).attr("id", id_val.replace(old_seq_str, new_seq_str));
+                }
+                if (type_val === 'checkbox' || type_val === 'hidden' || type_val === 'datetime') return;
+                $(this).val("");
+            });
+
+            $("label[for]", new_row).each(function () {
+                var for_val = $(this).attr("for");
+                $(this).attr("for", for_val.replace(old_seq_str, new_seq_str));
+            });
+
+            var file_input = $("input[type='file']", new_row);
+            var control_div = file_input.closest(".controls");
+            // remove the contents which will be generated after enableAceImageInput
+            control_div.html("");
+            control_div.append(file_input);
+
+            $("tbody tr", new_row).removeClass("alpha60");
+            $(":checkbox", new_row).attr("checked", false);
+            $(':input[multiple=multiple]', new_row).show();
+            $('select', new_row).show();
+
+            template_row.after(new_row);
+            $("input[name$='TOTAL_FORMS']").val(w_len + 1);
+            $("input[name$='MAX_NUM_FORMS']").val(w_len + 1);
+
+            // Chosen works correctly only when it knows which size to display itself(width, height) so call it after the select
+            // added into a container(div, element).
+            $(':input[multiple=multiple]', new_row).enableChosen();
+            $('select', new_row).enableChosen();
+            $(':file', new_row).enableAceImageInput(1024, 1024, 0, 0);
+            $("[type=datetime]", new_row).removeClass("hasDatepicker").datepicker(date_picker_options);
+        }
+
+        $(document).ready(function () {
+            var $form = $('#id-form');
+            $(':file', $form).enableAceImageInput(1024, 1024, 0, 0);
+
+            $(":text[name$='ORDER']", $form).addClass("input-mini spinner-input");
+
+            $("[type=datetime]", $form).datepicker(date_picker_options);
+
+            // make the  widget is gray if switch to delete
+            $(":checkbox[name$='DELETE']")
+                .addClass("ace-switch")
+                .after('<span class="lbl"></span>');
+            $(".form-inline")
+                .on("click", ":checkbox[name$='DELETE']", function () {
+                    $(this).closest("tbody tr").toggleClass("alpha60")
+                });
+
+            var ajaxFormOptions = $form.buildAjaxFormOptions();
+            $form.ajaxForm(ajaxFormOptions);
+
+            var rules = $form.buildFormValidationRules();
+            $form.validate({rules: rules});
+
+            $("#append_item_button").on("click", clone_item);
+
+            $(':input[multiple=multiple]', $form).enableChosen();
+            $('select', $form).enableChosen();
+
+            $('#id_tab a', $form).click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+            });
+
+            // 如果表单内容有改变，则隐藏之前的表单提交（成功/失败）信息
+            $form.change(function () {
+                hideFormSubmitMessage($form);
+            });
+        });
+
+    </script>
+
+{% endblock pagecontent_js %}

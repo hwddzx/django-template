@@ -1,0 +1,15 @@
+asgiref==3.7.2
+beautifulsoup4==4.12.2
+crispy-bootstrap3==2022.1
+Django==4.2.7
+django-appconf==1.0.6
+django-compressor==4.4
+django-crispy-forms==2.1
+djangorestframework==3.14.0
+pytz==2023.3.post1
+rcssmin==1.1.1
+rjsmin==1.2.1
+soupsieve==2.5
+sqlparse==0.4.4
+typing-extensions==4.8.0
+XlsxWriter==3.1.9

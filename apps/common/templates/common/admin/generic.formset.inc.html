@@ -1,0 +1,171 @@
+{#a simple template works with ModelAwareMixin#}
+
+{% extends 'admin/simple.base.inc.html' %}
+
+{% block pagenav %}
+    {{ model_verbose_name }}
+    <div class="pull-right">
+        <div class="content-toolbar btn-toolbar pull-right clearfix">
+            <div class="btn-group">
+                <button id="append_item_button" class="btn btn-primary" type="button">
+                    <i class="icon-plus"></i>
+                    新增{{ model_verbose_name }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+{% endblock pagenav %}
+
+{% block pagecontent %}
+
+    <form id="id-form"
+          action="{{ form_action }}"
+          method="post"
+          enctype="{{ form_enctype|default:'application/x-www-form-urlencoded' }}">
+        {{ formset.management_form }}
+        {% csrf_token %}
+        {% for form in formset %}
+            <div class="widget-box">
+                <div class="widget-header widget-header-small">
+                    <h4>{{ model_verbose_name }}{{ forloop.counter }}</h4>
+                </div>
+                <div class="widget-body">
+                    <div class="widget-main">
+                        {% for field in form %}
+                            {% if field.is_hidden %}
+                                {{ field }}
+                            {% else %}
+                                <div class="form-group">
+                                    <div class="control-label">{{ field.label_tag }}:</div>
+                                    <div class="controls">
+                                        {{ field }} {{ field.errors }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <button class="btn btn-info" type="submit">
+                <i class="icon-ok bigger-110"></i>
+                {{ submit_btn_name|default:'保存' }}
+            </button>
+            &nbsp; &nbsp; &nbsp;
+            <button class="btn" type="reset">
+                <i class="icon-undo bigger-110"></i>
+                重置
+            </button>
+        </div>
+
+        <div class="space-6"></div>
+        <div class="alert alert-block hide">
+        </div>
+    </form>
+
+    <script type="text/javascript">
+        var COL_COUNT = {{ column_count }};
+
+        function wrap_widgets() {
+            // layout the items by column. Each row has 3 items.
+            var $widgets = $(".widget-box");
+            for (var i = 0; i < $widgets.size(); i += COL_COUNT) {
+                $widgets.slice(i, i + COL_COUNT)
+                    .wrap('<div class="col-md-' + 12 / COL_COUNT + '"></div')
+                    .parent().wrapAll('<div class="row"></div>');
+            }
+        }
+
+        function unwrap_widgets() {
+            $(".widget-box").unwrap().unwrap();
+        }
+
+        function append_item() {
+            unwrap_widgets();
+
+            var $widgetBox = $(".widget-box")
+
+            var last_clone = $widgetBox.last().clone();
+            $('.chosen-container', last_clone).remove();
+            var w_len = $widgetBox.length;
+            var old_seq_str = '-' + (w_len - 1) + '-';
+            var new_seq_str = '-' + w_len + '-';
+            last_clone.find("h4").html("{{ model_verbose_name }}" + (w_len + 1));
+            $(":input", last_clone).each(function () {
+                var name_val = $(this).attr("name");
+                var id_val = $(this).attr("id");
+                var type_val = $(this).attr('type');
+                if (null != name_val) {
+                    $(this).attr("name", name_val.replace(old_seq_str, new_seq_str));
+                }
+                if (null != id_val) {
+                    $(this).attr("id", id_val.replace(old_seq_str, new_seq_str));
+                }
+                if (type_val === 'checkbox' || type_val === 'hidden') return;
+                $(this).val("");
+            });
+
+            $("label[for]", last_clone).each(function () {
+                var for_val = $(this).attr("for");
+                $(this).attr("for", for_val.replace(old_seq_str, new_seq_str));
+            });
+
+            var file_input = $("input[type='file']", last_clone);
+            var control_div = file_input.closest(".controls");
+            // remove the contents which will be generated after enableAceImageInput
+            control_div.html("");
+            control_div.append(file_input);
+
+            $(".widget-main", last_clone).removeClass("alpha60");
+            $(":checkbox", last_clone).attr("checked", false);
+            $(':input[multiple=multiple]', last_clone).show();
+
+            $widgetBox.last().after(last_clone);
+            $("input[name$='TOTAL_FORMS']").val(w_len + 1);
+            $("input[name$='MAX_NUM_FORMS']").val(w_len + 1);
+
+            wrap_widgets();
+
+            // Chosen works correctly only when it knows which size to display itself(width, height) so call it after the select
+            // added into a container(div, element).
+            $(':input[multiple=multiple]', $widgetBox.last()).enableChosen();
+            $(':file', $widgetBox.last()).enableAceImageInput(1024, 1024, 0, 0);
+        }
+
+        $(document).ready(function () {
+            var $form = $('#id-form');
+            $(':file', $form).enableAceImageInput(1024, 1024, 0, 0);
+
+            $(":text[name$='ORDER']")
+                .addClass("input-mini spinner-input");
+
+            wrap_widgets();
+
+            // make the  widget is gray if switch to delete
+            $(":checkbox[name$='DELETE']")
+                .addClass("ace-switch")
+                .after('<span class="lbl"></span>');
+            $(".form-inline")
+                .on("click", ":checkbox[name$='DELETE']", function () {
+                    $(this).closest(".widget-main").toggleClass("alpha60")
+                });
+
+            var ajaxFormOptions = $.extend($form.buildAjaxFormOptions(), {
+                beforeSubmit: function (formData, jqForm, options) {
+                    $(":submit", $form).attr("disabled", true);
+                }
+            });
+            $form.ajaxForm(ajaxFormOptions);
+
+            $("#append_item_button", $form).on("click", append_item);
+
+            $(':input[multiple=multiple]', $form).enableChosen();
+
+        });
+
+    </script>
+
+{% endblock pagecontent %}

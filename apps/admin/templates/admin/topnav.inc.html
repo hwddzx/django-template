@@ -1,0 +1,36 @@
+{% comment %} 右上角导航 {% endcomment %}
+{% load static %}
+{% load compress %}
+
+<ul class="nav ace-nav">
+
+    <li class="light-blue">
+        <a data-toggle="dropdown" href="#" class="dropdown-toggle">
+            <img class="nav-user-photo" src="{% static 'admin/img/dummy_avatar.jpg' %}" alt="dummy avatar">
+            <span class="user-info">
+                <small>欢迎,</small>
+                {{ user }}
+            </span>
+
+            <i class="ace-icon fa fa-caret-down"></i>
+        </a>
+
+        <ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
+            <li>
+                <a href="#" data-modalurl="{% url 'admin:account:change_password' user.id %}">
+                    <i class="ace-icon fa fa-cog"></i>
+                    修改密码
+                </a>
+            </li>
+
+            <li class="divider"></li>
+
+            <li>
+                <a href="{% url 'admin:account:logout' %}">
+                    <i class="ace-icon fa fa-power-off"></i>
+                    注销
+                </a>
+            </li>
+        </ul>
+    </li>
+</ul>

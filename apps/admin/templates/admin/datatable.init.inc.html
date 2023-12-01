@@ -1,0 +1,324 @@
+{% comment %}
+为list类型的页面的datatable提供通用初始化模板
+
+在其它模板中的引用方法：
+{% include 'admin/datatable.init.inc.html' %}
+
+{% endcomment %}
+
+{#just a template for clone to datatable action bar of each of list page#}
+<div id="datatable-actions" class="hidden">
+    <div class="btn-group">
+        <a id="column-picker" class="dropdown-toggle btn btn-default btn-sm" data-toggle="dropdown" href="#">
+            <i class="fa fa-filter"></i> 过滤列 <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu model_fields pull-right">
+        </ul>
+    </div>
+    <div class="btn-group layout-btns" data-toggle="buttons">
+        <label class="btn btn-default btn-sm layout-normal active">
+            <input type="radio"> <i class="fa fa-th-large"></i>
+        </label>
+        <label class="btn btn-default btn-sm layout-condensed">
+            <input type="radio"> <i class="fa fa-th"></i>
+        </label>
+    </div>
+    <div class="btn-group layout-btns" data-toggle="buttons-checkbox">
+        <button type="button" class="btn btn-default btn-sm layout-full"><i class="fa fa-expand"></i></button>
+    </div>
+</div>
+
+<!-- 在需要的页面再载入需要的js，提高页面整体的加载速度 -->
+{% load static %}
+<script type="text/javascript" src="{% static 'ace133/js/dataTables/jquery.dataTables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'ace133/js/dataTables/jquery.dataTables.bootstrap.min.js' %}"></script>
+
+<script>
+    $(document).ready(function () {
+        var table_args = {
+            "pagingType": "full_numbers",
+            "autoWidth": false, /* 自动计算宽度 */
+            "ordering": true,
+            "destroy": true,
+            "stateSave": true,
+            "pageLength": 15, /* 默认显示15行 */
+            "lengthMenu": [
+                [15, 25, 50, 100],
+                [15, 25, 50, 100]
+            ],
+            "order": [],
+            "processing": true,
+            "columnDefs": [
+                {"orderable": false, "targets": ["unsortable", "unexportable"]}
+            ],
+            // l - Length changing
+            // f - Filtering input
+            // t - The table!
+            // i - Information
+            // p - Pagination
+            // r - pRocessing
+            "dom": "<'row'<'col-md-2'f><'col-md-1'r><'col-md-9'p>>t<'row'<'col-md-3'l><'col-md-4'i><'col-md-5'p>>",
+
+            "language": {
+                "processing": "<div class=\"green bigger text-center\"><i class=\"fa fa-spinner fa fa-spin orange bigger-200\"></i>&nbsp处理中...</div>",
+                "lengthMenu": "每页显示 _MENU_ 条记录",
+                "zeroRecords": "没有匹配的记录",
+                "emptyTable": "没有数据",
+                "info": "显示第 _START_ 至 _END_ 条记录，共 _TOTAL_ 条",
+                "infoEmpty": "没有记录",
+                "infoFiltered": "(由 _MAX_ 条记录过滤)",
+                "infoPostFix": "",
+                "search": "查找:",
+                "url": "",
+                "paginate": {
+                    "first": "首页",
+                    "previous": "上页",
+                    "next": "下页",
+                    "last": "末页"
+                }
+            }
+        };
+        $.extend($.fn.dataTable.defaults, table_args);
+    });
+
+    function shortDatableSearchParams(params) {
+        // datatable compose very verbose search parameter to server. it lead to long url or body.
+        // here just to drop unused informations.
+        params.columns.map(function (column) {
+            delete column.name;
+            delete column.searchable;
+            delete column.search.regex;
+            delete column.orderable;
+        });
+    }
+
+    // 初始化datatable, 并使用server side processing
+    function dataTableInitWithServerProcessing(datatable, columnDefs, ajax, disableActionBar, customizeOptions) {
+        var initActionBar = function (api) {
+            var $actions = $('#datatable-actions').clone().toggleClass('hidden', false).appendTo($('.datatables-action-bar'));
+
+            //full screen btn
+            $('.layout-btns .layout-full', $actions).click(function () {
+                if ($(this).hasClass('active')) {
+                    // reset
+                    $('#sidebar, div.breadcrumbs').toggle('fast');
+                    $('#main-content').removeClass('full-content').addClass('main-content');
+                    $(window).trigger('resize');
+                } else {
+                    // full screen
+                    $('#sidebar, div.breadcrumbs').toggle('fast', function () {
+                        $('#main-content').removeClass('main-content').addClass('full-content');
+                        $(window).trigger('resize');
+                    });
+                }
+            });
+
+            //switch condense mode
+            $('.layout-btns .layout-normal').click(function (e) {
+                $('.dataTables_wrapper table').removeClass('table-condensed');
+            });
+
+            $('.layout-btns .layout-condensed').click(function (e) {
+                $('.dataTables_wrapper table').addClass('table-condensed');
+            });
+
+            // show datatable column picker
+            $('#column-picker', $actions).on("click", function (e) {
+                var $menu = $('.dropdown-menu', $(this).parent());
+                $menu.children().remove();
+                for (var i = 0; i < columnDefs.length; i++) {
+                    var searchValue = $("#id_" + columnDefs[i].name, datatable).first().val();
+                    // don't allow change the column if it's searching.
+                    // treat the name prefix with "_" as internal column which don't allow touch.
+                    var should_hide = (searchValue && searchValue.length > 0) || columnDefs[i].name[0] === '_';
+                    if (should_hide) {
+                        continue;
+                    }
+                    var icon_class = api.column(i).visible() ? 'fa fa-check' : 'fa fa-check-empty';
+                    var template = jQuery.validator.format('<li><a href="#" data-col="{0}"><i class="{1}"></i>{2}</a></li>');
+                    var il = template(i, icon_class, columnDefs[i].title);
+                    $menu.append(il);
+                }
+                e.preventDefault();
+            }).parent().on("click", "li>a", function (e) {
+                var currentCol = $(this).data('col');
+                api.column(currentCol).visible(!api.column(currentCol).visible());
+
+                var $widget = $("td[data-col='" + currentCol + "']").children().first();
+                $widget.off('change').change(function () {
+                    api.column(currentCol).search($widget.val()).draw();
+                });
+
+                e.preventDefault();
+            });
+        };
+
+
+        var dom = null;
+        if (disableActionBar) {
+            dom = "t<'row'<'col-md-3'l><'col-md-4'i><'col-md-5'p>>";
+        } else {
+            dom = "<'row'<'col-md-4'r><'col-md-offset-4 col-md-4'<'datatables-action-bar pull-right'>>>t<'row'<'col-md-3'l><'col-md-4'i><'col-md-5'p>>";
+        }
+
+        if ($.type(ajax) === "string") {
+            ajax = {
+                "url": ajax,
+                "data": function (params) {
+                    params.csrfmiddlewaretoken = "{{ csrf_token }}";
+                    shortDatableSearchParams(params);
+                },
+                "type": "POST"
+            }
+        }
+
+        var options = {
+            "dom": dom,
+            "columnDefs": columnDefs,
+            "ajax": ajax,
+            "processing": true,
+            "serverSide": true,
+            "order": [],
+            "stateSaveParams": function (settings, data) {
+                // highlight the filtered columns header.
+                var table = new $.fn.dataTable.Api(settings);
+                $.each(data.columns, function (index, col) {
+                    if (columnDefs[index].searchable) {
+                        if (col.search.search != null && col.search.search !== "" && col.search.search !== 'null') {
+                            $(table.column(index).header()).addClass('highlight-filtered-header');
+                        } else {
+                            $(table.column(index).header()).removeClass('highlight-filtered-header');
+                        }
+                    }
+                });
+            }
+        };
+        $.extend(options, (customizeOptions || {}));
+        datatable.dataTable(options);
+
+        var api = datatable.api();
+        var state = api.state.loaded();
+        if (!disableActionBar) {
+            initActionBar(api);
+        }
+
+        // load history filter text
+        $("thead tr:first", datatable.closest('.dataTables_wrapper')).children().each(function () {
+            var colIndex = $(this).data('col');
+
+            $(this).children().each(function () {
+                var title = columnDefs[colIndex].title;
+                var $widget = $(this);
+                if ($widget.is("input")) {
+                    $widget.attr("placeholder", title);
+                } else if ($(this).is('select')) {
+                    $widget.attr("data-placeholder", title);
+                }
+
+                $widget.change(function () {
+                    api.column(colIndex).search($widget.val()).draw();
+                    // FIXME: introduce the api.draw to resolve the problem of header mis-align to body after filter
+                    // but it will lead to search the server again. Disable it at this moment.
+                    // api.draw();
+                });
+            });
+            // restore the previous filter value to filter editor
+            var searchValue = state ? state.columns[colIndex].search.search : "";
+            if (searchValue && searchValue != '' && searchValue.length > 0) {
+                var $child = $(this).children().first();
+                if ($child.is("select")) {
+                    $child.val(searchValue.split(','));
+                } else {
+                    $child.val(searchValue);
+                }
+            }
+        });
+        // draw highlight
+        $('tbody', datatable).on('click', 'tr', function () {
+            api.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+        });
+        // draw index col if has.
+        $.each(columnDefs, function (index, item) {
+            if (item.className === 'datatables-index-column') {
+                // see http://datatables.net/examples/api/counter_columns.html
+                api.on('order.dt search.dt', function () {
+                    api.column(item.targets[0], {search: 'applied', order: 'applied'}).nodes().each(function (cell, i) {
+                        cell.innerHTML = i + 1;
+                    });
+                });
+                return false;
+            }
+        });
+    }
+
+    // 初始化inline在其他界面中的datatable, 并使用server side processing,
+    // 为了简单, 不支持分页和过滤. 可以考虑以后开放
+    function dataTableInlineInitWithServerProcessing(datatable, aoColumnDefs, ajax) {
+        datatable.dataTable({
+            // l - Length changing
+            // f - Filtering input
+            // t - The table!
+            // i - Information
+            // p - Pagination
+            // r - pRocessing
+            "dom": "t<'row'<'col-md-3'l><'col-md-4'i><'col-md-5'p>>",
+            "columnDefs": aoColumnDefs,
+            "ajax": ajax,
+            "processing": false,
+            "serverSide": true,
+            "paging": true,
+            "order": []
+        });
+    }
+
+    function handleDatatableRowAction($datatable, $actionButton, csrf_token, actionFn) {
+        var $row = $actionButton.closest("tr");
+        var $masterCol = $row.find('td.datatables-master-column ');
+        if (!$masterCol || $masterCol.length === 0) {
+            $masterCol = $row.find('td').eq(0);
+        }
+        var objectName = $masterCol.html();
+        var actionName = $actionButton.data('text');
+
+        var responseHandler = function (response) {
+            if (response['ret'] === 0) {
+                $.event.trigger({type: "onPageDirty"});
+            } else {
+                var message = "";
+                if (response['errmsg-detail'].length) {
+                    message = response['errmsg-detail'];
+                } else {
+                    message = response['errmsg'];
+                }
+                alertError(message);
+            }
+        };
+
+        var url = $actionButton.data('url');
+        var extra = $actionButton.data('extra');
+        if ($.type(extra) === "string") {
+            extra = $.parseJSON(extra);
+        }
+        var actionType = $actionButton.data('actiontype');
+        if (actionFn) {
+            actionFn(url, objectName, extra, responseHandler)
+        } else {
+            var alert = $actionButton.data('alert');
+            if (!alert || alert.length === 0) {
+                alert = "确认" + actionName + ": " + objectName + "?";
+            }
+            confirmMessage(alert, {
+                actionCallback: function () {
+                    if (actionType === 'GET') {
+                        $.getJSON(url, responseHandler);
+                    } else {
+                        $.extend(extra, {csrfmiddlewaretoken: csrf_token});
+                        $.post($actionButton.data('url'), extra, responseHandler)
+                    }
+                }
+            });
+        }
+    }
+
+</script>

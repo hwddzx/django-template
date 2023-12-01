@@ -1,0 +1,127 @@
+/* admin  specific CSS goes here. */
+table tr.even.row_selected td {
+    background-color: #d98a1d;
+}
+table tr.odd.row_selected td {
+    background-color: #d1811e;
+}
+
+/* error */
+label.error {
+    background: #ffdddd;
+    padding-left: 15px;
+    margin-left: 3px;
+    color: #FF0000;
+}
+
+input.error, select.error {
+    border: 2px solid #FF0000;
+}
+
+.alpha60 {
+    /* Fallback for web browsers that don't support RGBa */
+    background-color: rgb(0, 0, 0);
+    /* RGBa with 0.6 opacity */
+    background-color: rgba(0, 0, 0, 0.6);
+    /* For IE 5.5 - 7*/
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000);
+    /* For IE 8*/
+    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000)";
+    z-index: 100;
+}
+
+img.small-icon {
+    width: 32px;
+    height: 32px;
+}
+
+img.large-icon {
+    width: 64px;
+    height: 64px;
+}
+
+.label {
+    padding-top: 3px;
+}
+
+td .action-button {
+    min-width: 100px;
+}
+
+.asteriskField {
+    color: #FF0000;
+    font-weight: bold;
+}
+
+/* consistent with text input placehodler */
+.chosen-container-multi .chosen-choices li.search-field input[type="text"] {
+    color: #D8D8D8;
+}
+
+full-width {
+    display: block;
+    width: 100%;
+}
+
+.dataTables_wrapper img.avatar {
+    border: 2px solid #C9D6E5; border-radius: 100%; max-width: 40px; margin-right: 10px; margin-left: 0px; box-shadow: none;
+}
+
+.help-block{
+    color: #8a6d3b
+}
+
+.datatables-master-column a, .datatables-master-column a:hover {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dial-container input{
+    background-color: #FFF !important;
+}
+
+.bootbox-width {
+    width: 70%;
+    margin: 0 auto;
+}
+
+th.highlight-filtered-header {
+    background-color: #FF0 !important;
+}
+
+#id_attr_options_picker_container .popover {
+  min-width: 900px;
+}
+
+#id_comment_editor_container .popover {
+  min-width: 500px;
+}
+
+.profile-info-name {
+    width: 140px;
+}
+
+table.dataTable tbody tr.selected {
+  background-color:#00CCFF;
+}
+
+/*因为Bootstrap的modal弹出层的z-index值过大，遮挡了UEditor可视化编辑器中的JS弹出层。*/
+/*我们可以自己编写壹个custom.css文件，做一些z-index的调整，然后在Bootstrap的css之后再引入，即可覆盖调整该问题。*/
+/*see http://bbs.zkyc.cn/thread-6457-1-1.html*/
+.modal{
+  z-index:500;
+}
+
+.modal-backdrop{
+  z-index:400;
+}
+
+.scroll-container {
+ height:600px;
+  overflow-y:scroll;
+  width:100%;
+}
+
+.select2-results {
+    max-height: 400px;
+}

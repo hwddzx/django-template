@@ -1,0 +1,106 @@
+{#a simple template works with ModelAwareMixin#}
+
+{% extends 'admin/simple.base.inc.html' %}
+
+{% block pagenav %}
+    {% if page_title %}
+        {{ page_title }}
+    {% else %}
+        {{ model_verbose_name }}列表
+    {% endif %}
+    {% if create_url %}
+        <div class="pull-right">
+            <div class="content-toolbar btn-toolbar pull-right clearfix">
+                <div class="btn-group">
+                    {# use "modal_backdrop" to indicate whether dismiss the form after user click outside of screen or note #}
+                    <a class="btn btn-primary" href="#" data-modalurl="{{ create_url }}"
+                       data-backdrop="{{ modal_backdrop }}">
+                        <i class="fa fa-plus"></i> 新建{{ model_verbose_name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock pagenav %}
+
+{% block pagecontent %}
+    {% if modal_show %}
+        <div class="modal-content">
+            <div class="modal-header">
+                <button data-dismiss="modal" class="close" type="button">×</button>
+                <h4 class="blue bigger lighter">
+                    {{ model_verbose_name }}列表
+                </h4>
+            </div>
+
+            <div class="modal-body overflow-visible">
+                <div class="row table-overflow-scroll">
+                    <div class="clearfix"></div>
+                    <table id="id-{{ datatables_id_prefix }}-table"
+                           class="table table-striped table-bordered table-hover">
+                        {% include "common/admin/datatables.header.inc.html" with builder=datatables_builder %}
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="space-2"></div>
+            </div>
+            <div class="modal-footer">
+                {% block modal_footer %}
+                    <button data-dismiss="modal" class="btn btn-sm" type="button">
+                        <i class="fa fa-undo red"></i>
+                        关闭
+                    </button>
+                {% endblock modal_footer %}
+            </div>
+        </div>
+    {% else %}
+        <div class="row table-overflow-scroll">
+            <div class="clearfix"></div>
+            <table id="id-{{ datatables_id_prefix }}-table" class="table table-striped table-bordered table-hover">
+                {% include "common/admin/datatables.header.inc.html" with builder=datatables_builder %}
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+{% endblock pagecontent %}
+
+{% block pagecontent_js %}
+
+    <script>
+        $(document).ready(function () {
+            var aoColumnDefs = $.parseJSON('{{ datatables_builder.build_aoColumnDefs }}');
+            var $main_table = $('#id-{{ datatables_id_prefix }}-table');
+            dataTableInitWithServerProcessing($main_table, aoColumnDefs, "{{ datatables_list_url }}",
+                {% if modal_show %}true{% else %}false{% endif %});
+
+            $main_table.on('click', 'a[href="#action"][data-handlertype="system"]', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDatatableRowAction($main_table, $(this), '{{ csrf_token }}');
+            });
+
+            $('thead select', $main_table).enableChosen({width: '100%'});
+            $('thead .datatables-header-checkbox', $main_table).html('<label><input type="checkbox" /><span class="lbl"></span></label>')
+                .find(':checkbox').on("change", function () {
+                    $('tbody :checkbox').prop('checked', $(this).prop('checked'));
+                }
+            );
+
+            var refreshDatatable = function () {
+                $main_table.api().ajax.reload(null, false);
+            }
+
+            //XXX: should remove the listener first to avoid more than one listeners.
+            $(document).off('onPageDirty').on("onPageDirty", function () {
+                refreshDatatable();
+            });
+
+        });
+
+
+    </script>
+{% endblock pagecontent_js %}
+

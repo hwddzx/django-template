@@ -22,8 +22,8 @@ class User(TimeBaseModel, PermissionsMixin, AbstractBaseUser):
         default=""
     )
 
-    nick_name = models.CharField(
-        verbose_name=u'姓名',
+    nickname = models.CharField(
+        verbose_name=u'昵称',
         max_length=200,
         blank=True,
         default=""
@@ -60,4 +60,4 @@ class User(TimeBaseModel, PermissionsMixin, AbstractBaseUser):
         return self.get_full_name()
 
     def get_full_name(self):
-        return self.nick_name if self.nick_name else self.username
+        return self.nickname if self.nickname else self.username

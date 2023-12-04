@@ -76,7 +76,7 @@ class UserForm(CrispyModelForm):
     class Meta:
         model = auth.get_user_model()
         fields = (
-            'username', 'phone', 'email', 'nick_name', 'is_superuser', 'user_permissions', 'password',
+            'username', 'phone', 'email', 'nickname', 'is_superuser', 'user_permissions', 'password',
             'confirm_password'
         )
 
@@ -94,7 +94,7 @@ class UserDatatablesBuilder(DatatablesBuilder):
 
     email = DatatablesTextColumn(is_searchable=True)
 
-    nick_name = DatatablesTextColumn(is_searchable=True)
+    nickname = DatatablesTextColumn(is_searchable=True)
 
     is_active = DatatablesBooleanColumn(
         (('', u'全部'), (1, u'激活'), (0, u'锁定')),

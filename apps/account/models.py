@@ -8,8 +8,6 @@ from apps.common.models import TimeBaseModel, BaseModel
 
 
 class User(TimeBaseModel, PermissionsMixin, AbstractBaseUser):
-    USER_ADMIN_ID = 1
-
     username = models.CharField(
         verbose_name=u'用户名',
         max_length=70,
@@ -19,34 +17,37 @@ class User(TimeBaseModel, PermissionsMixin, AbstractBaseUser):
     email = models.EmailField(
         verbose_name=u'账号(邮箱地址)',
         blank=True,
-        default=""
+        default="",
     )
 
     nickname = models.CharField(
         verbose_name=u'昵称',
         max_length=200,
         blank=True,
-        default=""
+        default="",
     )
 
     phone = models.CharField(
-        max_length=32,
-        default='',
         verbose_name=u'电话',
+        max_length=32,
+        default="",
         blank=True,
         db_index=True,
     )
 
     is_staff = models.BooleanField(
-        'staff status',
+        verbose_name='工作人员',
         default=False,
     )
     is_active = models.BooleanField(
-        'active',
+        verbose_name='激活',
         default=True,
     )
 
-    date_joined = models.DateTimeField('date joined', default=timezone.now)
+    date_joined = models.DateTimeField(
+        verbose_name='加入日期',
+        default=timezone.now,
+    )
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []

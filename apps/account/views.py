@@ -50,7 +50,6 @@ class LogoutView(RedirectView):
 class UserListView(NavigationHomeMixin, ModelAwareMixin, DatatablesBuilderMixin, AjaxDatatablesView):
     model = auth.get_user_model()
     datatables_builder_class = UserDatatablesBuilder
-    queryset = auth.get_user_model().staffs.order_by('-date_joined')
 
 
 class UserFormView(RequestAwareMixin, ModelAwareMixin, AjaxFormView):

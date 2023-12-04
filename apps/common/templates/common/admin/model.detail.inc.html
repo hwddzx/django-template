@@ -1,0 +1,115 @@
+{% extends 'admin/simple.base.inc.html' %}
+
+{% block pagenav %}
+    {{ model_verbose_name }}详情
+{% endblock pagenav %}
+
+{% block pagecontent %}
+
+    <ul id="id_tab" class="nav nav-tabs">
+        <li class=""><a href="#master" data-toggle="tab">{{ model_verbose_name }}</a></li>
+        {% for b in builders %}
+            <li class=""><a href="#detail_{{ b.model_name }}-t-{{ model_name }}_{{ forloop.counter }}"
+                            data-toggle="tab">{{ b.model_verbose_name }}</a></li>
+        {% endfor %}
+
+    </ul>
+
+    <div id="id_tab_content" class="tab-content">
+        <div class="tab-pane fade in" id="master">
+            <div class="profile-user-info profile-user-info-striped">
+                {% for field in model.detail %}
+                    <div class="profile-info-row" style="min-height: 30px">
+                        <div class="profile-info-name">
+                            {{ field.label }}
+                        </div>
+                        <div class="profile-info-value width-75">
+                            {{ field.value | safe | escape | linebreaks }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% for b in builders %}
+            <div class="tab-pane fade"
+                 id="detail_{{ b.model_name }}-t-{{ model_name }}_{{ forloop.counter }}">
+                <div class="page-header position-relative">
+                    <h3>{{ model }}
+                        <div class="content-toolbar btn-toolbar pull-right clearfix">
+                            <div class="btn-group">
+                                <a data-{% if b.modal_show %}modal{% endif %}url="{{ b.create_url }}?{{ model_name }}={{ model.pk }}"
+                                   href="#" class="btn btn-yellow">
+                                    <i class="fa fa-plus"></i>新建{{ b.model_verbose_name }}
+                                </a>
+                            </div>
+                        </div>
+                    </h3>
+                </div>
+
+                <div class="row">
+                    <div class="clearfix"></div>
+                    <table id="id-{{ b.model_name }}-t-{{ model_name }}-table"
+                           class="table table-striped table-bordered table-hover">
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+
+    </div>
+
+{% endblock pagecontent %}
+
+{% block pagecontent_js %}
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+
+            {% for b in builders %}
+                var aoColumnDefs = $.parseJSON('{{ b.datatables_builder.build_aoColumnDefs }}');
+                var $main_table = $('#id-{{ b.model_name }}-t-{{ model_name }}-table');
+                dataTableInlineInitWithServerProcessing($main_table, aoColumnDefs, "{{ b.datatables_list_url }}");
+
+                $main_table.on('click', 'a[href="#action"][data-handlertype="system"]', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDatatableRowAction($main_table, $(this), '{{ csrf_token }}');
+                });
+
+            {% endfor %}
+
+            $('#id_tab a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+            });
+
+            $(function () {
+                // keep the active tab and restore it after page loading.
+                $('a[data-toggle="tab"]').on('shown.bs.tab', function () {
+                    localStorage.setItem('detail_lastTab_{{ model_name }}', $(this).attr('href'));
+                });
+
+                var lastTab = localStorage.getItem('detail_lastTab_{{ model_name }}');
+                if (lastTab) {
+                    $('a[href=' + lastTab + ']').tab('show');
+                } else {
+                    $('a[data-toggle="tab"]:first').tab('show');
+                }
+            });
+
+            //XXX: should remove the old one  to avoid duplicated event processing.
+            $(document).off('onPageDirty').on("onPageDirty", function () {
+                var $datatables = $(".tab-pane.active .dataTable");
+                if ($datatables) {
+                    // only refresh the datatable in current page if has
+                    $datatables.dataTable().api().ajax.reload(null, false);
+                } else {
+                    load($('#main-content'), "{{ page_path }}");
+                }
+            });
+
+        });
+
+    </script>
+
+{% endblock pagecontent_js %}

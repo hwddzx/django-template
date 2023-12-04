@@ -1,0 +1,44 @@
+{% load static %}
+
+{% if not modal_show %}
+    <div class="breadcrumbs" id="breadcrumbs">
+        {% block topnav %}
+
+        {% endblock topnav %}
+    </div>
+{% endif %}
+
+<div class="page-content" id="page-content">
+    <!--PAGE CONTENT BEGINS HERE-->
+    {% if not modal_show %}
+        {% block pageheader %}
+            <div class="page-header position-relative">
+                <h1>
+                    {% block pagenav %}
+                        <!-- Example
+                        Dashboard
+                        -->
+                    {% endblock pagenav %}
+                </h1>
+            </div>
+        {% endblock pageheader %}
+    {% endif %}
+    <div class="row">
+        <div class="col-md-12 col-xs-12">
+
+            {% block pagecontent %}
+
+                <div id="alert" class="alert alert-block alert-success hidden">
+                    <button type="button" class="close" data-dismiss="alert"><i class="fa fa-remove"></i></button>
+                    <span><i class="fa fa-ok green"></i>这里显示操作的结果信息（成功，失败及失败原因）</span>
+                </div>
+
+            {% endblock pagecontent %}
+
+            {% block pagecontent_js %}
+
+            {% endblock pagecontent_js %}
+        </div>
+    </div>
+</div>
+

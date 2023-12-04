@@ -1,0 +1,188 @@
+{% load static %}
+{% load compress %}
+
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}管理主页{% endblock title %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+    {# <link rel="shortcut icon" href="/favicon.ico"/>#}
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <!--directive the 360 to use webkit-->
+    <meta name="renderer" content="webkit">
+
+    <!-- bootstrap & fontawesome -->
+    <link rel="stylesheet" href="{% static 'ace133/css/bootstrap.min.css' %}"/>
+    <link href="{% static 'ace133/css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
+
+
+    <!-- text fonts -->
+    <!-- <link href="http://fonts.useso.com/css?family=Open+Sans:300,400,700" rel="stylesheet" type="text/css"> -->
+    <link rel="stylesheet" href="{% static 'ace133/css/ace-fonts.min.css' %}"/>
+
+    {% compress css %}
+        <!-- page specific plugin styles -->
+        <!-- XXX: make sure put them in front of ace links -->
+        <link rel="stylesheet" href="{% static 'libs/fancybox/jquery.fancybox.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/jquery-ui.custom.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/chosen.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/select2.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/colorpicker.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/daterangepicker.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/bootstrap-datetimepicker.min.css' %}"/>
+
+        <link rel="stylesheet" href="{% static 'libs/bootstrap-modal-2.2.5/css/bootstrap-modal-bs3patch.css' %}"/>
+        <link rel="stylesheet" href="{% static 'libs/bootstrap-modal-2.2.5/css/bootstrap-modal.css' %}"/>
+        <!--gallery-->
+        <link rel="stylesheet" href="{% static 'ace133/css/colorbox.min.css' %}" id="main-ace-style"/>
+        <!--ace styles-->
+        <link rel="stylesheet" href="{% static 'ace133/css/ace.min.css' %}" id="main-ace-style"/>
+
+        <!--[if lte IE 9]>
+        <link rel="stylesheet" href="{% static 'ace133/css/ace-part2.min.css' %}"/>
+        <![endif]-->
+
+        <link rel="stylesheet" href="{% static 'ace133/css/ace-skins.min.css' %}"/>
+        <link rel="stylesheet" href="{% static 'ace133/css/ace-rtl.min.css' %}"/>
+
+        <!--[if lte IE 9]>
+        <link rel="stylesheet" href="{% static 'ace133/css/ace-ie.min.css' %}"/>
+        <![endif]-->
+
+        <!-- inline styles related to this page -->
+        <link rel="stylesheet" href="{% static 'admin/css/site.css' %}"/>
+
+    {% endcompress %}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'libs/ueditor1_4_3/themes/default/css/ueditor.css' %}"/>
+
+    <!-- ace settings handler -->
+    <script src="{% static 'ace133/js/ace-extra.min.js' %}"></script>
+
+    {% block extrahead %}
+
+    {% endblock extrahead %}
+
+</head>
+
+<body class="{% block bodyclass %}no-skin{% endblock bodyclass %}">
+
+{% block body %}
+    <div id="navbar" class="navbar navbar-default">
+        <div class="navbar-container" id="navbar-container">
+
+            {% include 'admin/mobile.sidebar.toggle.inc.html' %}
+
+            <div class="navbar-header pull-left">
+                <a href="#" class="navbar-brand">
+                    <small>{{ site_name }}</small>
+                </a>
+            </div>
+
+            <div class="navbar-buttons navbar-header pull-right" role="navigation">
+                {% include 'admin/topnav.inc.html' %}
+            </div>
+
+        </div>
+    </div>
+
+    <div class="main-container" id="main-container">
+        {#  support modal page overlap #}
+        <div tabindex="-1" class="modal fade" id="id_modal_form_container_master" role="dialog">
+            <div class="my-modal-dialog"></div>
+        </div>
+        <div tabindex="-1" class="modal" id="id_modal_form_container_slave" role="dialog">
+            <div class="my-modal-dialog"></div>
+        </div>
+
+        <div class="sidebar responsive" id="sidebar">
+            {% include 'admin/sidebar.inc.html' %}
+        </div>
+
+        <div id="main-content" class="main-content">
+            <div class="main-content-inner">
+                {% include 'admin/task.base.inc.html' %}
+            </div>
+        </div>
+    </div>
+
+    <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-small btn-inverse">
+        <i class="fa fa-angle-double-up fa-only bigger-110"></i>
+    </a>
+
+{% endblock body %}
+
+
+<!-- basic scripts -->
+
+<!--[if !IE]> -->
+<script src="{% static 'ace133/js/jquery.min.js' %}"></script>
+<!-- <![endif]-->
+
+<!--[if IE]>
+<script src="{% static 'ace133/js/jquery1x.min.js' %}"></script>
+<![endif]-->
+
+<script type="text/javascript">
+    if ('ontouchstart' in document.documentElement) document.write('<script src="{% static 'ace133/js/jquery.mobile.custom.min.js' %}"><\/script>');
+</script>
+
+{# see http://stackoverflow.com/questions/17435359/bootstrap-collapsed-menu-links-not-working-on-mobile-devices/17440942#17440942#}
+<script>
+    if (typeof ($.fn.modal) === 'undefined') {
+        document.write('<script src="{% static 'ace133/js/bootstrap.min.js' %}"><\/script>')
+    }
+</script>
+
+{% compress js %}
+    <!--page specific plugin scripts-->
+
+    <script src="{% static 'ace133/js/jquery-ui.custom.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.ui.touch-punch.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.validate.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.validate.zh-CN.js' %}"></script>
+    <script src="{% static 'ace133/js/date-time/moment.min.js' %}"></script>
+    <script src="{% static 'ace133/js/date-time/locales/moments.zh-cn.js' %}"></script>
+    <script src="{% static 'ace133/js/date-time/bootstrap-datetimepicker.min.js' %}"></script>
+    <script src="{% static 'ace133/js/date-time/daterangepicker.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.form.js' %}"></script>
+    <script src="{% static 'ace133/js/chosen.jquery.min.js' %}"></script>
+    <script src="{% static 'ace133/js/select2.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.inputlimiter.1.3.1.min.js' %}"></script>
+    <script src="{% static 'ace133/js/jquery.knob.min.js' %}"></script>
+    <script src="{% static 'ace133/js/bootbox.min.js' %}"></script>
+
+    <script src="{% static 'libs/bootstrap-modal-2.2.5/js/bootstrap-modalmanager.js' %}"></script>
+    <script src="{% static 'libs/bootstrap-modal-2.2.5/js/bootstrap-modal.js' %}"></script>
+
+    <!--gallery-->
+    <script src="{% static 'ace133/js/jquery.colorbox.min.js' %}"></script>
+    <script src="{% static 'libs/fancybox/jquery.fancybox.min.js' %}"></script>
+
+    <!--ace scripts-->
+    <script src="{% static 'ace133/js/ace-elements.min.js' %}"></script>
+    <script src="{% static 'ace133/js/ace.min.js' %}"></script>
+
+    <script src="{% static 'libs/highcharts/highcharts.js' %}"></script>
+    <script src="{% static 'libs/highcharts/modules/exporting.js' %}"></script>
+
+    <!--site specific scripts-->
+    <script src="{% static 'admin/js/site.js' %}"></script>
+    <script src="{% static 'admin/js/site.ajaxform.js' %}"></script>
+
+    {% block extrajs %}
+
+    {% endblock extrajs %}
+
+{% endcompress %}
+
+<script type="text/javascript" charset="utf-8" src="{% static 'libs/ueditor1_4_3/ueditor.config.js' %}"></script>
+<script type="text/javascript" charset="utf-8" src="{% static 'libs/ueditor1_4_3/ueditor.all.min.js' %}"></script>
+<script type="text/javascript">window.UEDITOR_HOME_URL = "{% static 'libs/ueditor1_4_3/' %}";</script>
+
+
+{% include 'admin/datatable.init.inc.html' %}

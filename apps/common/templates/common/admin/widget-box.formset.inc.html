@@ -1,0 +1,236 @@
+{#a simple template works with ModelAwareMixin#}
+
+{% extends 'admin/simple.base.inc.html' %}
+{% load crispy_forms_tags %}
+
+{% block pagenav %}
+    {{ model_verbose_name }}
+    <div class="pull-right">
+        <div class="content-toolbar btn-toolbar pull-right clearfix">
+            <div class="btn-group">
+                <button id="append_item_button" class="btn btn-primary" type="button">
+                    <i class="fa fa-plus"></i>
+                    新增{{ model_verbose_name }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+{% endblock pagenav %}
+
+{% block pagecontent %}
+
+    <form id="{{ form_id }}"
+          class="form-horizontal"
+          action="{{ form_action }}"
+          method="{{ form_method|default:'post' }}"
+          enctype="{{ form_enctype|default:'application/x-www-form-urlencoded' }}"
+          {% if modal_show %}data-modal_show="true"{% endif %}
+    >
+        {{ formset.management_form }}
+        {% csrf_token %}
+
+        {% if modal_show %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button data-dismiss="modal" class="close" type="button">×</button>
+                    <h4 class="blue bigger lighter">
+                        {% if page_title %}
+                            {{ page_title }}
+                        {% else %}
+                            添加{{ model_verbose_name }}
+                        {% endif %}
+                        <div class="pull-right">
+                            <div class="content-toolbar btn-toolbar pull-right clearfix">
+                                <div class="btn-group">
+                                    <button id="append_item_button" class="btn btn-primary" type="button">
+                                        <i class="fa fa-plus"></i>
+                                        新增{{ model_verbose_name }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </h4>
+                </div>
+
+                <div class="modal-body overflow-visible">
+                    {% crispy form %}
+                    <hr/>
+                    {% for form in formset %}
+                        <div class="widget-box">
+                            <div class="widget-header widget-header-small">
+                                <h4>{{ model_verbose_name }}{{ forloop.counter }}</h4>
+                            </div>
+                            <div class="widget-body">
+                                <div class="widget-main">
+                                    {% crispy form %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="space-6"></div>
+                    <div class="alert alert-block hidden" id="id_form_alert">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div id="id-progress-bar-container"
+                         class="progress progress-striped"
+                         style="margin: 0px 20px;display:none">
+                        <div id="id-progress-bar" class="progress-bar progress-bar-success"></div>
+                    </div>
+                    {% block modal_footer %}
+                        <button data-dismiss="modal" class="btn btn-sm" type="button">
+                            <i class="fa fa-undo red"></i>
+                            取消
+                        </button>
+                        <button class="btn btn-sm btn-primary " type="submit">
+                            <i class="fa fa-check green"></i>
+                            确定
+                        </button>
+                    {% endblock modal_footer %}
+                </div>
+            </div>
+        {% else %}
+            {# TODO: support none-modal form #}
+        {% endif %}
+    </form>
+
+    <script type="text/javascript">
+        var COL_COUNT = {{ column_count }};
+
+        $(document).ready(function () {
+            var $form = $('#{{ form_id }}');
+
+            var relayoutBoxes = function (includeHidden) {
+                var $widgets = $(".widget-box", $form)
+                var colCssClass = 'col-md-' + 12 / COL_COUNT;
+                $widgets.each(function () {
+                    var $widget = $(this);
+                    if ($widget.parent().parent().hasClass('row')) {
+                        $widget.unwrap().unwrap();
+                    }
+                    if ($widget.parent().hasClass(colCssClass)) {
+                        $widget.unwrap();
+                    }
+                });
+                if (!includeHidden) {
+                    $widgets = $widgets.filter(':visible');
+                }
+                for (var i = 0; i < $widgets.size(); i += COL_COUNT) {
+                    $widgets.slice(i, i + COL_COUNT)
+                        .wrap('<div class="' + colCssClass + '"></div')
+                        .parent().wrapAll('<div class="row"></div>');
+                }
+            };
+
+            var onDeleteRow = function (e) {
+                var $deleteCheckbox = $(this).prev();
+                $deleteCheckbox.attr("checked", true);
+                $(this).closest(".widget-box").fadeOut("slow", function () {
+                    // delete the row directly if it's not commit to server
+                    if ($(this).data('is_cloned')) {
+                        $(this).parent().remove();
+                        refreshFormsetMeta();
+                    } else {
+                        $(this).hide();
+                    }
+                    relayoutBoxes(false);
+                });
+                e.preventDefault();
+            };
+
+            var createDeleteButton = function () {
+                return $("<button href='#' class='btn btn-danger  btn-minier'>删除</button>").click(onDeleteRow);
+            };
+
+            // replace the django delete widget with button we deinfed.
+            $(":checkbox[name$='DELETE']").hide().after(function () {
+                // remove the "delete" label
+                $(this).parent().prev().remove();
+                return createDeleteButton();
+            });
+
+            var refreshFormsetMeta = function () {
+                var rowCount = $(".widget-box", $form).length;
+                $("input[name$='TOTAL_FORMS']", $form).val(rowCount);
+                $("input[name$='MAX_NUM_FORMS']", $form).val(rowCount);
+            };
+
+
+            $form.ajaxForm($form.buildAjaxFormOptions());
+
+            $(':file', $form).enableAceImageInput(1024, 1024, 0, 0);
+            $(":text[name$='ORDER']")
+                .addClass("input-mini spinner-input");
+
+
+            var rules = $form.buildFormValidationRules();
+            $form.validate({rules: rules});
+
+
+            relayoutBoxes(true);
+            var onCloneRow = function () {
+
+                var $newBox = $(".widget-box", $form).last().clone().data('is_cloned', true);
+                $('.chosen-container', $newBox).remove();
+                var w_len = $(".widget-box").length;
+                var old_seq_str = '-' + (w_len - 1) + '-';
+                var new_seq_str = '-' + w_len + '-';
+                $newBox.find("h4").html("{{ model_verbose_name }}" + (w_len + 1));
+                $(":input", $newBox).each(function () {
+                    var name_val = $(this).attr("name");
+                    var id_val = $(this).attr("id");
+                    var type_val = $(this).attr('type');
+                    if (null != name_val) {
+                        $(this).attr("name", name_val.replace(old_seq_str, new_seq_str));
+                    }
+                    if (null != id_val) {
+                        $(this).attr("id", id_val.replace(old_seq_str, new_seq_str));
+                    }
+                    if (type_val === 'checkbox' || type_val === 'hidden' || type_val === 'datetime') return;
+                    $(this).val("");
+                });
+
+                $("label[for]", $newBox).each(function () {
+                    var for_val = $(this).attr("for");
+                    $(this).attr("for", for_val.replace(old_seq_str, new_seq_str));
+                });
+
+                var file_input = $("input[type='file']", $newBox);
+                var control_div = file_input.closest(".controls");
+                // remove the contents which will be generated after enableAceImageInput
+                control_div.html("");
+                control_div.append(file_input);
+
+                $(":checkbox", $newBox).attr("checked", false);
+                $(':input[multiple=multiple]', $newBox).show();
+                $('select', $newBox).show();
+                $(':input[type="number"]', $newBox).val(0);
+
+
+                $(".widget-box", $form).last().after(function () {
+                    $(":button", $newBox).click(onDeleteRow);
+                    return $newBox.show();
+                });
+
+                relayoutBoxes(false);
+                // Chosen works correctly only when it knows which size to display itself(width, height) so call it after the select
+                // added into a container(div, element).
+                $(':input[multiple=multiple]', $newBox).enableChosen();
+                $('select', $newBox).enableChosen();
+                $(':file', $newBox).enableAceImageInput(1024, 1024, 0, 0);
+
+                refreshFormsetMeta();
+            };
+
+            $("#append_item_button", $form).on("click", onCloneRow);
+
+            $(':input[multiple=multiple]', $form).enableChosen();
+            $('select', $form).enableChosen();
+
+        });
+
+    </script>
+
+{% endblock pagecontent %}

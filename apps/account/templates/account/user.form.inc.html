@@ -1,0 +1,47 @@
+{% extends 'common/admin/generic.form.inc.html' %}
+
+{% block form_js %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            let containsAlphabet = /[A-Za-z]/;
+            let containsNumbers = /[0-9]/;
+
+            $.validator.addMethod("pwcheck", function (value) {
+                return containsAlphabet.test(value) // 包含字母
+                    && containsNumbers.test(value); // 包含数字
+            });
+
+            let $form = $('#{{ form_id }}');
+
+            let rules = $form.buildFormValidationRules();
+            $.extend(rules, {
+                password: {
+                    required: true,
+                    pwcheck: true,
+                    minlength: 6
+                },
+                confirm_password: {
+                    equalTo: "input[name='password']"
+                }
+            });
+
+            $form.validate({
+                rules: rules,
+                messages: {
+                    password: {
+                        pwcheck: "请输入一个同时包含字母和数字的字符串"
+                    }
+                }
+            });
+
+            $form.ajaxForm($form.buildAjaxFormOptions());
+
+            {% if dummy_password %}
+                // We can't set the password editor default value in server side due to bound form limitation
+                // so workaround to set it here. So server side can get user want to change the password if it's value changed.
+                $('#id_password, #id_confirm_password').val('{{ dummy_password }}');
+            {% endif %}
+        });
+    </script>
+{% endblock form_js %}

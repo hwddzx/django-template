@@ -1,0 +1,11 @@
+<tfoot>
+<tr>
+    {% for field in builder %}
+        <th data-col="{{ forloop.counter0 }}">
+            {% if field.field.is_searchable %}
+                {{ field }}
+            {% endif %}
+        </th>
+    {% endfor %}
+</tr>
+</tfoot>

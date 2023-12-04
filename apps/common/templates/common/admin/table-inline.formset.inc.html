@@ -1,0 +1,222 @@
+{#a simple template works with ModelAwareMixin#}
+
+{% extends 'admin/simple.base.inc.html' %}
+{% load crispy_forms_tags %}
+
+{% block pagenav %}
+    {% if page_title %}
+        {{ page_title }}
+    {% else %}
+        添加{{ model_verbose_name }}
+    {% endif %}
+    <div class="pull-right">
+        <div class="content-toolbar btn-toolbar pull-right clearfix">
+            <div class="btn-group">
+                <button id="append_item_button" class="btn btn-primary" type="button">
+                    <i class="fa fa-plus"></i>
+                    新增{{ model_verbose_name }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+{% endblock pagenav %}
+
+{% block pagecontent %}
+    <form id="{{ form_id }}"
+          class="form-horizontal"
+          action="{{ form_action }}"
+          method="{{ form_method|default:'post' }}"
+          enctype="{{ form_enctype|default:'application/x-www-form-urlencoded' }}"
+          {% if modal_show %}data-modal_show="true"{% endif %}
+    >
+        {% if modal_show %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button data-dismiss="modal" class="close" type="button">×</button>
+                    <h4 class="blue bigger lighter">
+                        {% if page_title %}
+                            {{ page_title }}
+                        {% else %}
+                            添加{{ model_verbose_name }}
+                        {% endif %}
+                        <div class="pull-right">
+                            <div class="content-toolbar btn-toolbar pull-right clearfix">
+                                <div class="btn-group">
+                                    <button id="append_item_button" class="btn btn-primary" type="button">
+                                        <i class="fa fa-plus"></i>
+                                        新增{{ model_verbose_name }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </h4>
+                </div>
+
+                <div class="modal-body overflow-visible">
+                    {% crispy formset helper %}
+                    <div class="space-6"></div>
+                    <div class="alert alert-block hidden" id="id_form_alert">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div id="id-progress-bar-container"
+                         class="progress progress-striped"
+                         style="margin: 0px 20px;display:none">
+                        <div id="id-progress-bar" class="progress-bar progress-bar-success"></div>
+                    </div>
+                    {% block modal_footer %}
+                        <button data-dismiss="modal" class="btn btn-sm" type="button">
+                            <i class="fa fa-undo red"></i>
+                            取消
+                        </button>
+                        <button class="btn btn-sm btn-primary " type="submit">
+                            <i class="fa fa-check green"></i>
+                            确定
+                        </button>
+                    {% endblock modal_footer %}
+                </div>
+            </div>
+        {% else %}
+            {% crispy formset helper %}
+            <div id="id_form_extra_area"></div>
+            <div class="vspace-16"></div>
+
+            {% block form_footer %}
+                <div class="form-actions">
+                    <button class="btn btn-info" type="submit">
+                        <i class="fa fa-ok bigger-110"></i>
+                        保存
+                    </button>
+                </div>
+            {% endblock form_footer %}
+
+            <div id="id-progress-bar-container"
+                 class="progress progress-striped"
+                 style="margin: 0px 20px;display:none">
+                <div id="id-progress-bar" class="progress-bar progress-bar-success"></div>
+            </div>
+
+            <div class="space-6"></div>
+            <div class="alert alert-block hidden" id="id_form_alert">
+            </div>
+        {% endif %}
+    </form>
+
+
+{% endblock pagecontent %}
+
+{% block pagecontent_js %}
+    <script type="text/javascript">
+        var date_picker_options = {format: "yyyy-mm-dd", language: "zh-CN", weekStart: 1, maxDate: "+0D"};
+
+
+        $(document).ready(function () {
+            var $form = $('#{{ form_id }}');
+            var $table = $("tbody", $form);
+
+            $(':file', $form).enableAceImageInput(1024, 1024, 0, 0);
+
+            var onDeleteRow = function (e) {
+                var $deleteCheckbox = $(this).prev();
+                $deleteCheckbox.attr("checked", true);
+                $(this).closest("tr").fadeOut("slow", function () {
+                    // delete the row directly if it's not commit to server
+                    if ($(this).data('is_cloned')) {
+                        $(this).remove();
+                        refreshFormsetMeta();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+                e.preventDefault();
+            };
+
+            var createDeleteButton = function () {
+                return $("<button href='#' class='btn btn-danger  btn-minier'>删除</button>").click(onDeleteRow)
+            };
+
+            // replace the django delete widget with button we deinfed.
+            $(":checkbox[name$='DELETE']").hide().after(function () {
+                return createDeleteButton();
+            });
+
+            $form.ajaxForm($form.buildAjaxFormOptions({
+                {# 不允许自动返回 #}
+                shouldNotBack: {% if shouldNotBack %} true {% else %}false{% endif %}
+            }));
+
+            $('.datetimeinput', $form)
+                .data('date-format', "YYYY-MM-DD HH:mm:ss")
+                .datetimepicker({
+                    pickTime: true,
+                    sideBySide: true,
+                    showClear: true
+                });
+
+            {#      var rules = $form.buildFormValidationRules();#}
+            {#      $form.validate({rules: rules});#}
+
+            var refreshFormsetMeta = function () {
+                var rowCount = $("tr", $table).length;
+                $("input[name$='TOTAL_FORMS']", $form).val(rowCount);
+                $("input[name$='MAX_NUM_FORMS']", $form).val(rowCount);
+            };
+
+            var onCloneRow = function () {
+                var template_row = $("tr", $table).last();
+                var $newRow = template_row.clone().data('is_cloned', true);
+                $('.chosen-container', $newRow).remove();
+                var row_len = $("tr", $table).length;
+                var old_seq_str = '-' + (row_len - 1) + '-';
+                var new_seq_str = '-' + row_len + '-';
+                $newRow.find("h4").html("{{ model_verbose_name }}" + (row_len + 1));
+                $(":input", $newRow).each(function () {
+                    var name_val = $(this).attr("name");
+                    var id_val = $(this).attr("id");
+                    var type_val = $(this).attr('type');
+                    if (null != name_val) {
+                        $(this).attr("name", name_val.replace(old_seq_str, new_seq_str));
+                    }
+                    if (null != id_val) {
+                        $(this).attr("id", id_val.replace(old_seq_str, new_seq_str));
+                    }
+                    if (type_val === 'checkbox' || type_val === 'hidden' || type_val === 'datetime') return;
+                    $(this).val("");
+                });
+                $("label[for]", $newRow).each(function () {
+                    var for_val = $(this).attr("for");
+                    $(this).attr("for", for_val.replace(old_seq_str, new_seq_str));
+                });
+                var file_input = $("input[type='file']", $newRow);
+                var control_div = file_input.closest(".controls");
+                // remove the contents which will be generated after enableAceImageInput
+                control_div.html("");
+                control_div.append(file_input);
+                $(":checkbox", $newRow).attr("checked", false);
+                $(':input[multiple=multiple]', $newRow).show();
+                $(':input[type="number"]', $newRow).val(0);
+                $('select', $newRow).show();
+                template_row.after(function () {
+                    $(":button", $newRow).click(onDeleteRow);
+                    return $newRow.show();
+                });
+                // Chosen works correctly only when it knows which size to display itself(width, height) so call it after the select
+                // added into a container(div, element).
+                $('select', $newRow).enableChosen();
+                $(':input[multiple=multiple]', $newRow).enableChosen();
+                $(':file', $newRow).enableAceImageInput(1024, 1024, 0, 0);
+
+                refreshFormsetMeta();
+            };
+
+            $("#append_item_button", $form).on("click", onCloneRow);
+
+            $(':input[multiple=multiple]', $form).enableChosen();
+            $('select', $form).enableChosen();
+
+        });
+
+    </script>
+
+{% endblock pagecontent_js %}

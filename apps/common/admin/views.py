@@ -3,19 +3,18 @@
 import os
 import sys
 import time
-import json
 import logging
 import datetime
-import urllib
 
 from io import StringIO
+from urllib.parse import quote
 from collections import OrderedDict
 
 from xlsxwriter.workbook import Workbook
 
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.html import escape
 from django.forms import CharField, ChoiceField
 from django.urls import reverse, NoReverseMatch
@@ -126,7 +125,7 @@ class ModelAccessibilityMixin(object):
             return super(ModelAccessibilityMixin, self).dispatch(request, *args, **kwargs)
         if base_model and request.user.has_perm_access(base_model):
             if request.method == "GET" and 'check_access' in request.GET:
-                return HttpResponseJson(exceptions.build_success_response_result(), request)
+                return JsonResponse(exceptions.build_success_response_result())
         else:
             raise exceptions.AjaxPermissionDeny()
         return super(ModelAccessibilityMixin, self).dispatch(request, *args, **kwargs)
@@ -136,6 +135,7 @@ class RequestAwareMixin(object):
     """
     A mixin to make "request" object available to Form.
     """
+    request = None
 
     def get_initial(self):
         initial = super(RequestAwareMixin, self).get_initial()
@@ -149,6 +149,7 @@ class AjaxListView(AjaxLoginRequiredMixin, ListView):
 
 
 class FormProcessMixin(object):
+    object = None
 
     def form_valid(self, form):
         try:
@@ -168,7 +169,7 @@ class FormProcessMixin(object):
         response_data = exceptions.build_success_response_result()
         response_data["id"] = self.object.id
         self.post_process(True, response_data)
-        return HttpResponseJson(response_data, self.request)
+        return JsonResponse(response_data)
 
     def form_invalid(self, form):
         self.post_process(False, form.errors)
@@ -179,6 +180,8 @@ class FormProcessMixin(object):
 
 
 class ModalShowMixin(object):
+    request = None
+
     def get_context_data(self, **kwargs):
         context = super(ModalShowMixin, self).get_context_data(**kwargs)
         if self.request.GET.get('modal'):
@@ -274,8 +277,9 @@ class AjaxFormsetEditView(AjaxLoginRequiredMixin, ModalShowMixin, RequestAwareMi
 
     def get(self, request, *args, **kwargs):
         if 12 % self.form_column_count != 0:
-            raise BaseException(
-                'form_column_count must be divide by 12 like 2, 3, 4, 6, 12 for follow the bootstrap col-md- 12')
+            raise Exception(
+                'form_column_count must be divide by 12 like 2, 3, 4, 6, 12 for follow the bootstrap col-md- 12'
+            )
         pk = self.kwargs.get('pk')
         if pk and int(pk) != 0:
             master = self.get_object()
@@ -346,7 +350,7 @@ class AjaxFormsetEditView(AjaxLoginRequiredMixin, ModalShowMixin, RequestAwareMi
                         errors[u"%s-%d-%s" % (self.model._meta.object_name.lower(), counter, key)] = value
                 counter += 1
             raise exceptions.AjaxValidateFormFailed(errors=errors)
-        return HttpResponseJson(result, request)
+        return JsonResponse(result)
 
     def get_form_helper(self):
         return None
@@ -375,7 +379,7 @@ class AjaxSimpleUpdateView(AjaxLoginRequiredMixin, UpdateView):
         message = self.update(obj)
         if message:
             raise exceptions.AjaxValidateFormFailed(errors=message)
-        return HttpResponseJson(exceptions.build_success_response_result(), request)
+        return JsonResponse(exceptions.build_success_response_result())
 
     def update(self, obj):
         return ""
@@ -586,7 +590,7 @@ class AjaxDatatablesView(AjaxLoginRequiredMixin, DatatablesSearchMix, ListView):
 
         res = {"draw": int(request_params.get('draw')), "recordsTotal": total, "recordsFiltered": total, "data": data}
         request_params = self.on_build_response_data(res)
-        return HttpResponseJson(request_params, request)
+        return JsonResponse(request_params)
 
     def get_data(self, sorting_field, start, end, datatables_builder, *args, **kwargs):
         queryset = self.get_queryset()
@@ -780,9 +784,9 @@ class ExcelExportView(ExcelBuilderMixIn, ListView):
                 filename_in_header = 'download.xls'
             else:
                 # For others like Firefox, we follow RFC2231 (encoding extension in HTTP headers).
-                filename_in_header = 'filename*=UTF-8\'\'%s' % urllib.quote(excel_file_name)
+                filename_in_header = 'filename*=UTF-8\'\'%s' % quote(excel_file_name)
         else:
-            filename_in_header = 'filename*=UTF-8\'\'%s' % urllib.quote(excel_file_name)
+            filename_in_header = 'filename*=UTF-8\'\'%s' % quote(excel_file_name)
 
         response['Content-Disposition'] = 'attachment; %s' % filename_in_header
         response['Cache-Control'] = 'no-cache'
@@ -821,25 +825,11 @@ class ModelActiveView(AjaxSimpleUpdateView):
 
 class AjaxDetailView(AjaxLoginRequiredMixin, DetailView):
     http_method_names = ['get']
+    object = None
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_to_response(self.get_context_data(object=self.object))
-
-
-class HttpResponseJson(HttpResponse):
-    def __init__(self, result, request=None, **extra):
-        content_type = 'application/json; charset=utf-8'
-        if request:
-            # e.g.
-            # Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)
-            ua = request.META['HTTP_USER_AGENT']
-            if ua and (ua.find('MSIE 8') != -1 or ua.find('MSIE 9') != -1):
-                content_type = 'text/plain; charset=utf-8'
-
-        super(HttpResponseJson, self).__init__(
-            content=json.dumps(result, ensure_ascii=False),
-            content_type=content_type, **extra)
 
 
 class CsrfExemptMixin(object):
@@ -865,7 +855,7 @@ class ModelCheckAccessMixin(object):
                 data = {"ret": -1, "errmsg": error_msg}
             else:
                 data = exceptions.build_success_response_result()
-            return HttpResponseJson(data, self.request)
+            return JsonResponse(data)
 
         return super(ModelCheckAccessMixin, self).dispatch(*args, **kwargs)
 

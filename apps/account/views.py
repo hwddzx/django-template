@@ -6,9 +6,11 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.generic import RedirectView
 from django.views.generic.base import View, TemplateView
+from django.contrib.auth.models import Group
 
 from apps.common import exceptions
-from apps.account.forms import UserDatatablesBuilder, UserForm, UserChangePasswordForm
+from apps.account.forms import UserDatatablesBuilder, UserForm, UserChangePasswordForm, GroupDatatablesBuilder, \
+    GroupForm
 from apps.common.admin.views import NavigationHomeMixin, ModelAwareMixin, DatatablesBuilderMixin, AjaxDatatablesView, \
     RequestAwareMixin, AjaxUpdateView, AjaxSimpleUpdateView, AdminRequiredMixin, AjaxFormView
 
@@ -107,3 +109,15 @@ class ResetPasswordView(View):
     def post(self, request, *args, **kwargs):
         # email = request.POST['email']
         return JsonResponse(exceptions.build_success_response_result(), request)
+
+
+class GroupListView(NavigationHomeMixin, ModelAwareMixin, DatatablesBuilderMixin, AjaxDatatablesView):
+    app_label = 'account'
+    model = Group
+    datatables_builder_class = GroupDatatablesBuilder
+
+
+class GroupFormView(RequestAwareMixin, ModelAwareMixin, AjaxFormView):
+    model = Group
+    app_label = 'account'
+    form_class = GroupForm

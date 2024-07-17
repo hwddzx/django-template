@@ -12,12 +12,6 @@ from apps.common.admin.forms import CrispyModelForm
 from apps.common.admin.datatables import DatatablesBuilder, DatatablesIdColumn, DatatablesTextColumn, \
     DatatablesBooleanColumn, DatatablesActionsColumn, DatatablesColumnActionsRender2
 
-PERM_CODE_NAMES = [
-    'can_assign_task',
-    'outsource',
-    'outsource_admin',
-]
-
 
 class UserForm(CrispyModelForm):
     # a dummy password to init to password editor of edit form
@@ -51,9 +45,6 @@ class UserForm(CrispyModelForm):
                 }
             )
             self.fields['password'].label = u'密码'
-
-        self.fields['user_permissions'].queryset = Permission.objects.filter(codename__in=PERM_CODE_NAMES)
-        self.fields['user_permissions'].widget.attrs['data-placeholder'] = "选择权限"
 
     def clean_password(self):
         password = self.cleaned_data.get('password')
@@ -160,7 +151,6 @@ class GroupForm(CrispyModelForm):
     def __init__(self, *args, **kwargs):
         super(GroupForm, self).__init__(*args, **kwargs)
         self.fields['permissions'].widget.attrs['class'] = "col-md-10"
-        self.fields['permissions'].queryset = Permission.objects.filter(codename__in=PERM_CODE_NAMES)
 
     class Meta:
         model = Group

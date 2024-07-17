@@ -31,6 +31,7 @@ class HomeView(View):
     def build_menu(self):
         SUBMENU_ACCOUNT = [
             (u'用户', reverse('admin:account:user_list'), lambda req: req.user.is_superuser),
+            (u'用户组', reverse('admin:account:group_list'), lambda req: req.user.is_superuser),
         ]
 
         MENU = (

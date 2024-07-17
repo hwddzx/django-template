@@ -16,4 +16,9 @@ urlpatterns = [
     path('user/<int:pk>/unlock/', views.UserLockView.as_view(), name='user_lock'),
     path('user/<int:pk>/lock/', views.UserUnlockView.as_view(), name='user_unlock'),
     path('user/<int:pk>/change_password/', views.UserChangePasswordView.as_view(), name='change_password'),
+
+    path('group/list/', views.GroupListView.as_view(), name='group_list'),
+    path('group/list/.json/', views.GroupListView.as_view(), name='group_list.json', kwargs={'json': True}),
+    path('group/create/', views.GroupFormView.as_view(), name='group_create', kwargs={'pk': 0}),
+    path('group/<int:pk>/edit/', views.GroupFormView.as_view(), name='group_edit'),
 ]
